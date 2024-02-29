@@ -2,7 +2,6 @@ import { createSlice } from "@reduxjs/toolkit";
 
 const initialState = {
 	items: [],
-	quantity: 1,
 	subtotal: 0,
 	tax: 0,
 	shippingCost: 0,
@@ -20,21 +19,56 @@ const cartSlice = createSlice({
 				(item) => item.id === newItem.id
 			);
 
-			if (existingItem) existingItem.quantity += newItem.quantity;
-			else state.items.push(newItem);
-
-			state.quantity = newItem.quantity;
-		},
-		removeItem(state, action) {
-			state.items = state.items.filter((item) => item.id !== action.payload);
+			if (existingItem >= 0) {
+				state.items[existingItem].quantity += newItem.quantity;
+				// updating price with qty
+				state.items[existingItem].price =
+					state.items[existingItem].price * newItem.quantity;
+			} // If it's a new item, add it to the cart
+			else
+				state.items.push({
+					...newItem,
+					price: newItem.price * newItem.quantity,
+				});
+			state.subtotal = state.items.reduce((acc, item) => acc + item.price, 0);
 		},
 		increment(state, action) {
-			let item = state.items.findIndex((item) => item.id === action.payload);
-			item.quantity++;
+			const itemId = action.payload;
+			const itemToIncrement = state.items.find((item) => item.id === itemId);
+
+			if (itemToIncrement) {
+				itemToIncrement.quantity++;
+				itemToIncrement.price =
+					itemToIncrement.unitPrice * itemToIncrement.quantity;
+			}
+			state.subtotal = state.items.reduce((acc, item) => acc + item.price, 0);
 		},
 		decrement(state, action) {
-			let item = state.items.findIndex((item) => item.id === action.payload);
-			item.quantity--;
+			const itemId = action.payload;
+			const itemToDecrement = state.items.find((item) => item.id === itemId);
+
+			if (itemToDecrement && itemToDecrement.quantity > 1) {
+				itemToDecrement.quantity--;
+				itemToDecrement.price =
+					itemToDecrement.price - itemToDecrement.unitPrice;
+			}
+			state.subtotal = state.items.reduce((acc, item) => acc + item.price, 0);
+		},
+
+		removeItem(state, action) {
+			const removedItemId = action.payload;
+			const removedItemIndex = state.items.findIndex(
+				(item) => item.id === removedItemId
+			);
+
+			if (removedItemIndex !== -1) {
+				state.quantity -= state.items[removedItemIndex].quantity;
+				state.items = [
+					...state.items.slice(0, removedItemIndex),
+					...state.items.slice(removedItemIndex + 1),
+				];
+			}
+			state.subtotal = state.items.reduce((acc, item) => acc + item.price, 0);
 		},
 		clearCart(state) {
 			state.items = [];
@@ -47,28 +81,18 @@ export const { addItem, removeItem, increment, decrement, clearCart } =
 export default cartSlice.reducer;
 
 // ********* selector functions **********
-export const getSubTotal = (state) =>
-	state.cart.items.reduce((acc, item) => acc + item.price * item.quantity, 0);
+export const getItems = (state) => state.cart.items;
 
-export const getTax = (state) => {
-	const subtotal = getSubTotal(state);
-	return 0.1 * subtotal; // 10% tax
-};
+export const getSubTotal = (state) => state.cart.subtotal;
 
-export const getShippingCost = (state) => {
-	const items = state.cart.items;
-	return 5 + 2 * items.length; // Fixed shipping cost is 5 + 2 per item additional
-};
+export const getTax = (state) => 0.1 * getSubTotal(state);
 
-export const getDiscount = (state) => {
-	const subtotal = getSubTotal(state);
-	return 0.05 * subtotal; // 5% discount
-};
+export const getShippingCost = (state) => 12 + 2 * state.cart.items.length; // starting $12 + per product $2
 
-export const getTotal = (state) => {
-	const subtotal = getSubTotal(state);
-	const tax = getTax(state);
-	const shippingCost = getShippingCost(state);
-	const discount = getDiscount(state);
-	return subtotal + tax + shippingCost - discount;
-};
+export const getDiscount = (state) => 0.05 * getSubTotal(state);
+
+export const getTotal = (state) =>
+	getSubTotal(state) +
+	getTax(state) +
+	getShippingCost(state) -
+	getDiscount(state);

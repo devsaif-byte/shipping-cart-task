@@ -1,6 +1,6 @@
 import { Image, Link, Text, useModal } from "@geist-ui/core";
 import Card from "@geist-ui/core/esm/card/card";
-import React from "react";
+import React, { useState } from "react";
 import ModalCart from "./Modal";
 // {
 // "id": 1,
@@ -17,10 +17,6 @@ export default function Product({ product }) {
 	const { visible, setVisible, bindings } = useModal();
 	const { image, price, title } = product;
 
-	function handleAddToCart() {
-		const addProduct = {};
-	}
-
 	return (
 		<>
 			<Card width="200px" onClick={() => setVisible(true)}>
@@ -33,11 +29,13 @@ export default function Product({ product }) {
 						{title}
 					</Text>
 				</Card.Footer>
-				<ModalCart
-					setVisible={setVisible}
-					bindings={bindings}
-					product={product}
-				/>
+				{visible && (
+					<ModalCart
+						setVisible={setVisible}
+						bindings={bindings}
+						product={product}
+					/>
+				)}
 			</Card>
 		</>
 	);

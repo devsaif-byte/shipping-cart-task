@@ -9,6 +9,7 @@ import Cart from "./ui/components/Cart";
 import axios from "axios";
 import { Provider } from "react-redux";
 import store from "./store";
+import { Divider } from "@geist-ui/core";
 
 function App() {
 	const [products, setProducts] = useState([]);
@@ -28,7 +29,6 @@ function App() {
 	useEffect(() => {
 		const getProducts = async function () {
 			const { data } = await axios.get("https://fakestoreapi.com/products");
-			console.log(data);
 			setProducts(data);
 		};
 		getProducts();
@@ -39,11 +39,12 @@ function App() {
 			<Provider store={store}>
 				<section className="w-full flex-grow flex flex-col">
 					<Navbar />
+					<Divider />
 					<div className="grow">
 						<Grid.Container gap={6} justify="center" className="w-full grow">
 							<Grid xs={24}>
 								<Card width="40%">
-									<Cart />
+									<Cart products={products} />
 								</Card>
 								<Card width="60%">
 									<div>
